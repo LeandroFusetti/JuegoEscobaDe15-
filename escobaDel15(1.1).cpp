@@ -1,5 +1,4 @@
 #include <iostream>
-#include <conio.h>
 #include <stdlib.h>
 #include <cstring>
 #include <cstdlib>
@@ -192,7 +191,6 @@ int main(){
         }
     }
 
-    getch(); 
     return 0;
 };
 
