@@ -1,4 +1,5 @@
 #include <iostream>
+#include <conio.h>
 #include <stdlib.h>
 #include <cstring>
 #include <cstdlib>
@@ -8,17 +9,10 @@
 using namespace std;
 typedef char str10[11];
 
-/*
-Pendiente:
--Word
--Indicar quien gano la partida
--Las cartas de la mesa que quedan cuando se termina una ronda vayan para el ultimo que junto 15
-*/
-
 struct Carta{
     int num;
     str10 palo; 
-    char ubi;// T: Table, H: Hand p1, h: Hand p2, A: acumuladoP1, a: acumuladoP2,D: Deck, S: Score
+    char ubi;// T: Table, H: Hand p1, h: Hand p2, A: acumuladoP1,X: Hand p3,x: acumuladoP3 a: acumuladoP2, D: Deck,
 };
 
 struct Jugador{
@@ -34,28 +28,38 @@ struct Jugador{
     short escobas=0;
 };
 
+struct Nodo{
+    int id;
+    Nodo * sgte;    
+};
+
 void repartir(Carta[],int,char); //Reparte las cartas
 void mostrarCartas(Carta[],char); //Muestra las cartas
 int cartaAleatoria(); //Genera un numero aleatorio del 0 al 39
 short cantCartasT(Carta[]); //Cuenta las cartas que hay en la mesa
-void ronda(Jugador&,Carta[]); //Cada turno
-void jugada(Jugador&, Carta[],short); //Cada jugada
+void ronda(Jugador&,Carta[],short&); //Cada turno
+void jugada(Jugador&, Carta[],short,short&); //Cada jugada
 void calcularPuntaje(Jugador&,Jugador&,Jugador&); //Calcula el puntaje de cada jugador
+void mostrarPuntaje(Carta[],Jugador);//Muestra el puntaje de cada jugador
+void limpiarMesa(Carta [],Jugador&);
+
+void push(Nodo*&,int);//Pila para jugada de 15
+int pop(Nodo*&);
 
 int main(){
 
     srand(time(nullptr)); // Inicializar la semilla del generador de números pseudoaleatorios
 
-    Carta mazo[40] = {{1,"Basto",'D'},{1,"Copa",'D'},{1,"Espada",'D'},{1,"Oro",'D'},
-                      {2,"Basto",'D'},{2,"Copa",'D'},{2,"Espada",'D'},{2,"Oro",'D'},
-                      {3,"Basto",'D'},{3,"Copa",'D'},{3,"Espada",'D'},{3,"Oro",'D'},
-                      {4,"Basto",'D'},{4,"Copa",'D'},{4,"Espada",'D'},{4,"Oro",'D'},
-                      {5,"Basto",'D'},{5,"Copa",'D'},{5,"Espada",'D'},{5,"Oro",'D'},
-                      {6,"Basto",'D'},{6,"Copa",'D'},{6,"Espada",'D'},{6,"Oro",'D'},
-                      {7,"Basto",'D'},{7,"Copa",'D'},{7,"Espada",'D'},{7,"Oro",'D'},
-                      {8,"Basto",'D'},{8,"Copa",'D'},{8,"Espada",'D'},{8,"Oro",'D'},
-                      {9,"Basto",'D'},{9,"Copa",'D'},{9,"Espada",'D'},{9,"Oro",'D'},
-                      {10,"Basto",'D'},{10,"Copa",'D'},{10,"Espada",'D'},{10,"Oro",'D'}
+    Carta mazo[40] = {{10,"Oro",'D'},{10,"Espada",'D'},{10,"Copa",'D'},{10,"Basto",'D'},
+                      {9,"Oro",'D'},{9,"Espada",'D'},{9,"Copa",'D'},{9,"Basto",'D'},
+                      {8,"Oro",'D'},{8,"Espada",'D'},{8,"Copa",'D'},{8,"Basto",'D'},
+                      {7,"Oro",'D'},{7,"Espada",'D'},{7,"Copa",'D'},{7,"Basto",'D'},
+                      {6,"Oro",'D'},{6,"Espada",'D'},{6,"Copa",'D'},{6,"Basto",'D'},
+                      {5,"Oro",'D'},{5,"Espada",'D'},{5,"Copa",'D'},{5,"Basto",'D'},
+                      {4,"Oro",'D'},{4,"Espada",'D'},{4,"Copa",'D'},{4,"Basto",'D'},
+                      {3,"Oro",'D'},{3,"Espada",'D'},{3,"Copa",'D'},{3,"Basto",'D'},
+                      {2,"Oro",'D'},{2,"Espada",'D'},{2,"Copa",'D'},{2,"Basto",'D'},
+                      {1,"Oro",'D'},{1,"Espada",'D'},{1,"Copa",'D'},{1,"Basto",'D'}
                     };
 
     Jugador jug1={0,1,'H','A',0,false,0,0,0};
@@ -73,7 +77,8 @@ int main(){
     if(cantJug == 2){ // PARTIDA 2 Jugadores
 
         while(jug1.puntos < 15 && jug2.puntos < 15){
-
+            
+            short jugador15=0;//Indica Id del ultimo jugador que sumo 15
             repartir(mazo,4,'T'); // Se le reparte a la mesa.
             int cantCartasRepartidas = 4;
 
@@ -81,66 +86,54 @@ int main(){
 
                 repartir(mazo,3,jug1.mano); // Se le reparte al j1
                 repartir(mazo,3,jug2.mano); // Se le reparte al j2
-                cout<<"=============================="<<endl;
-                ronda(jug1,mazo);
-                cout<<"=============================="<<endl;
-                ronda(jug2,mazo);
-                cout<<"=============================="<<endl;
-                ronda(jug1,mazo);
-                cout<<"=============================="<<endl;
-                ronda(jug2,mazo);
-                cout<<"=============================="<<endl;
-                ronda(jug1,mazo);
-                cout<<"=============================="<<endl;
-                ronda(jug2,mazo);
+
+                for(int i=1; i<=3;i++){
+
+                    cout<<"==============["<<i<<"]=============="<<endl;
+                    ronda(jug1,mazo,jugador15);
+                    cout<<"==============["<<i<<"]=============="<<endl;
+                    ronda(jug2,mazo,jugador15);                    
+                }
 
                 cantCartasRepartidas += 6;
 
             }
-            // Muestran las cartas acumuladas por cada jugador.
-            cout<<"====== Acumulado J1 ======:"<<endl;
-            mostrarCartas(mazo,jug1.acum);
-            cout<<"====== Acumulado J2 ======"<<endl;
-            mostrarCartas(mazo,jug2.acum);
+            cout<<"[-] Fin de la ronda"<<endl;
+            if(jugador15 == 1){
+                limpiarMesa(mazo,jug1);
+            }
+            else{
+                limpiarMesa(mazo,jug2);
+            }
 
             // Calculamos puntaje
             calcularPuntaje(jug1,jug2,jug3);
-
-            cout<<"====== Jugador 1 ======"<<endl;
-            cout<<"-puntos: "<<jug1.puntos<<endl;
-            cout<<"-Cantidad de cartas: "<<jug1.cantCartas<<endl;
-            cout<<"-Cantidad de Oros: "<<jug1.cantOro<<endl;
-            cout<<"-Cantidad de 7: "<<jug1.cantSiete<<endl;
-            cout<<"-Escobas: "<<jug1.escobas<<endl;
-            if(jug1.sieteOro){
-                cout<<"-Siete oro"<<endl;
-            }
-
-            cout<<"====== Jugador 2 ======"<<endl;
-            cout<<"-puntos: "<<jug2.puntos<<endl;
-            cout<<"-Cantidad de cartas: "<<jug2.cantCartas<<endl;
-            cout<<"-Cantidad de Oros: "<<jug2.cantOro<<endl;
-            cout<<"-Cantidad de 7: "<<jug2.cantSiete<<endl;
-            cout<<"-Escobas: "<<jug2.escobas<<endl;
-            if(jug2.sieteOro){
-                cout<<"-Siete oro"<<endl;
-            }
+            
+            // Mostramos cartas acumuladas y puntuacion
+            mostrarPuntaje(mazo,jug1);
+            mostrarPuntaje(mazo,jug2);
 
             // Devolvemos las cartas al mazo
             for(int i=0;i<40;i++){
                 mazo[i].ubi = 'D';
             }
 
+            // Reseteamos los puntos para comenzar una nueva ronda
             jug1={jug1.puntos,1,'H','A',0,false,0,0,0};
             jug2={jug2.puntos,2,'h','a',0,false,0,0,0};
         }
+        if(jug1.puntos <jug2.puntos){
+            cout<<"GANO JUGADOR 2!!"<<endl;
+        }else{
+            cout<<"GANO JUGADOR 1!!"<<endl;
+        } 
     }
 
     else{ // PARTIDA 3 JUGADORES
 
-        while(jug1.puntos < 15 && jug2.puntos < 15){
+        while((jug1.puntos < 15) && (jug2.puntos < 15) && (jug3.puntos < 15)){
 
-                        
+            short jugador15=0;//Indica Id del ultimo jugador que sumo 15            
             repartir(mazo,4,'T'); // Se le reparte a la mesa.
             int cantCartasRepartidas = 4;
 
@@ -149,143 +142,170 @@ int main(){
                 repartir(mazo,3,jug1.mano); // Se le reparte al j1
                 repartir(mazo,3,jug2.mano); // Se le reparte al j2
                 repartir(mazo,3,jug3.mano); // Se le reparte al j3
+                
+                for(int i=1;i<=3;i++){
 
-                cout<<"=============================="<<endl;
-                ronda(jug1,mazo);
-                cout<<"=============================="<<endl;
-                ronda(jug2,mazo);
-                cout<<"=============================="<<endl;
-                ronda(jug3,mazo);
-                cout<<"=============================="<<endl;
-                ronda(jug1,mazo);
-                cout<<"=============================="<<endl;
-                ronda(jug2,mazo);
-                cout<<"=============================="<<endl;
-                ronda(jug3,mazo);
-                cout<<"=============================="<<endl;
-                ronda(jug1,mazo);
-                cout<<"=============================="<<endl;
-                ronda(jug2,mazo);
-                cout<<"=============================="<<endl;
-                ronda(jug3,mazo);
-
+                    cout<<"==============["<<i<<"]=============="<<endl;
+                    ronda(jug1,mazo,jugador15);
+                    cout<<"==============["<<i<<"]=============="<<endl;
+                    ronda(jug2,mazo,jugador15);
+                    cout<<"==============["<<i<<"]=============="<<endl;
+                    ronda(jug3,mazo,jugador15);
+                }
+                
                 cantCartasRepartidas += 9;
 
             }
 
-            // Muestran las cartas acumuladas por cada jugador.
-            cout<<"[-] Acumulado j1:"<<endl;
-            mostrarCartas(mazo,jug1.acum);
-            cout<<"[-] Acumulado j2:"<<endl;
-            mostrarCartas(mazo,jug2.acum);
-            cout<<"[-] Acumulado j3:"<<endl;
-            mostrarCartas(mazo,jug3.acum);
+            cout<<"[-] Fin de la ronda"<<endl;
+            if(jugador15 == 1){
+                limpiarMesa(mazo,jug1);
+            }
+            else if(jugador15 == 2){
+                limpiarMesa(mazo,jug2);
+            }
+            else{
+                limpiarMesa(mazo,jug3);
+            }
 
             // Calculamos puntaje
             calcularPuntaje(jug1,jug2,jug3);
+
+            // Mostramos cartas acumuladas y puntuacion
+            mostrarPuntaje(mazo,jug1);
+            mostrarPuntaje(mazo,jug2);
+            mostrarPuntaje(mazo,jug3);
 
             // Devolvemos las cartas al mazo
             for(int i=0;i<40;i++){
                 mazo[i].ubi = 'D';
             }
-        }
-    }
 
+            // Reseteamos los puntos para comenzar una nueva ronda
+            jug1={jug1.puntos,1,'H','A',0,false,0,0,0};
+            jug2={jug2.puntos,2,'h','a',0,false,0,0,0};
+            jug3={jug3.puntos,3,'X','x',0,false,0,0,0};
+        }
+        if(jug1.puntos >jug2.puntos && jug1.puntos >jug2.puntos){
+            cout<<"GANO JUGADOR 1!!"<<endl;
+        }else if(jug2.puntos>jug1.puntos &&jug2.puntos >jug3.puntos){
+            cout<<"GANO JUGADOR 2!!"<<endl;
+        }else{
+            cout<<"GANO JUGADOR 3!!"<<endl;
+        }
+    }   
+
+    getch(); 
     return 0;
 };
 
-void ronda(Jugador& jug, Carta m[]){
+void ronda(Jugador& jug, Carta m[],short &jug15){
     
     
     int card = 0;
     cout<<"============ MESA ============"<<endl;
     mostrarCartas(m,'T');
+    if(cantCartasT(m) == 0){
+        cout<<"[-] Mesa vacia, descarte una carta!"<<endl;
+    }
     cout<<"========= Jugador "<<jug.id<<" =========="<<endl;
     mostrarCartas(m,jug.mano);
 
     cout<<"[-] Seleccione una carta de su mano (por id): ";cin>>card; //Selecciona la carta de la mano que desea jugar.
-    while(!(m[card].ubi == jug.mano)){
+    while(((card > 39) || m[card].ubi != jug.mano)){
         cout<<"[-] Ingresar una carta valida que este en su mano: ";cin>>card;
     }
-    m[card].ubi = 'T';
     
     cout<<"[-] Carta jugada: "<<m[card].num<<" de "<<m[card].palo<<endl;
-    jugada(jug,m,card);
+    jugada(jug,m,card,jug15);
 }
 
-void jugada(Jugador &jug, Carta m[],short card){ //id de carta elegida
+void jugada(Jugador &jug, Carta m[],short card, short &jug15){ //id de carta elegida
     
-    int var=0;
-
-    cout<<"[-] Pasar (0) / Hacer jugada (1): ";cin>>var; //Se pregunta si la desea descartar o realizar una jugada.
-    
+    Nodo * pila = NULL; //pila para los acumuladores de 15
     short cantT = cantCartasT(m);
-    while(var != 0 && var != 1){
-        cout<<"[-] Ingrese una opcion valida."<<endl;
-        cout<<"[-] pasar (0) / Hacer jugada (1): ";cin>>var;
-    }
     
+    int idsTable[cantT];    //Vector con los ids de las cartas de la mesa;
+    int j=0;
 
-    if(var == 1){
-
-        int n;
-        cout<<"[-] Elija cantidad de cartas para hacer combinacion con la suya: ";cin>>n;
-
-        while(n>cantT){
-            cout<<"[-] No hay tantas cartas en la mesa."<<endl;
-            cout<<"[-] Cuantas cartas de la mesa desea seleccionar (sin contar la suya): ";cin>>n;
+    for(int i=0;i<40;i++){ //Se guardan los ids de las cartas de la mesa
+        if(m[i].ubi == 'T'){
+            idsTable[j] = i;
+            j++;
         }
+    }
 
-        
-        int quince = m[card].num;
-        int ids[n]; //Vector de ids
-        m[card].ubi=jug.acum;
-        for(int i=0;i<n;i++){
+    int quince = m[card].num; //acumulador
+    int k=0;
 
-            int indice=0;
+    if(cantT != 0){ // Revisa que hayan cartas en la mesa
 
-            cout<<"[-] Seleccione una carta de la mesa (por id): ";cin>>indice;
-            while(!(m[indice].ubi == 'T')){
-                cout<<"[-] Error, Ingresar una carta que este en la mesa: ";cin>>indice;
-            }
+        while(quince != 15){ // Combinatoria de cartas hasta encontrar una combinacion que sume 15.
 
-            quince += m[indice].num;
-            ids[i] = indice;
-            m[indice].ubi = jug.acum;
-        }
+            for(int i = k ; i<cantT ; i++){
 
-        if(quince == 15){
-            if(n == cantT-1){
-                jug.escobas++;
-                cout<<"[-] Usted hizo escoba!"<<endl;
-            }
-            //Puntaje
-            jug.cantCartas += n+1;
-            for(int i=0;i<n;i++){
-                
-                if(strcmp(m[ids[i]].palo,"Oro")==0){ // Acumula oros
-                    jug.cantOro++;
+                if((quince + m[idsTable[i]].num) <= 15){
+                    quince += m[idsTable[i]].num;
+                    m[idsTable[i]].ubi = jug.acum;
+                    push(pila,idsTable[i]); // Una pila con los ids de las cartas que suman 15
                 }
 
-                if(m[ids[i]].num == 7){ // Acumula 7
-                    jug.cantSiete++;
+                if(quince==15){
+                    cout<<"[-] Usted sumo 15!"<<endl;
+                    break;
                 }
+            }
+            
+            k++;
 
-                if(ids[i] == 27){ // Siete de oro
-                    jug.sieteOro = true;
+            if(quince != 15){
+                quince = m[card].num; // Acumulador 
+                while(pila != NULL){ // Vaciamos la pila
+                    m[pop(pila)].ubi = 'T';
                 }
+            }
+            if(k==cantT)break; // Itera tantas veces como cartas hay en la mesa
+        }
+    }
+
+    
+    if(quince != 15){
+        cout<<"[-] No hay manera de sumar 15, su carta se descarto."<<endl;
+        m[card].ubi = 'T';
+    }
+    else{
+
+        jug15 = jug.id;
+
+        short nCantT = cantCartasT(m);
+        if(nCantT == 0){
+            cout<<"[-] Jugador "<<jug.id<<" hizo escoba!"<<endl;
+            jug.escobas++;
+        } 
+
+        m[card].ubi = jug.acum; //Carta de la mano a acumuladas
+        push(pila,card);
+
+        while(pila != NULL){ //vaciamos la pila
+
+            int idC = pop(pila);
+
+            Carta C = m[idC];
+
+            cout<<"[-] El "<<C.num<<" de "<<C.palo<<" se agrego a las cartas acumuladas del jugador "<<jug.id<<endl;
+            
+            jug.cantCartas++; // Acumula cantidad de cartas del jugador
+
+            if(strcmp(C.palo,"Oro") == 0){ // Acumula oros
+                jug.cantOro++;
+            }
+            if(C.num == 7){ // Acumula 7
+                jug.cantSiete++;
+            }
+            if(idC == 12){ // Siete de oro
+                jug.sieteOro = true;
             }
         }
-
-        if(quince != 15){
-
-            for(int i=0;i<n;i++){
-                m[ids[i]].ubi ='T';
-            }
-            cout<<"[-] Las cartas no suman 15."<<endl;
-            m[card].ubi = 'T';
-            jugada(jug,m,card);
-        }   
     }
 };
 
@@ -390,5 +410,64 @@ void calcularPuntaje(Jugador &jug1,Jugador &jug2, Jugador &jug3){
 
     if(jug3.cantSiete > jug1.cantSiete && jug3.cantSiete > jug2.cantSiete){
         jug3.puntos++;
+    }
+};
+
+void push(Nodo*& pila,int id){   //    La pila va por referencia porque no se puede perder la posicion de la pila.
+
+    Nodo * p = new Nodo();  //  Reservo espacio
+    p->id=id;           //  Guardo la info
+    p->sgte=pila;           //  Enlaze
+    pila = p;               //Pila siempre apunta al ultimo que agregue
+    return;
+}
+
+int pop(Nodo*& pila){
+
+    int x;         //  Auxiliar
+    Nodo* p = pila; //   Auxiliar para poder borrar
+    x=p->id;      //  Recupera info
+    pila = p->sgte; //  Reapunta la pila
+    delete p;       //    Borra
+    return x;
+}
+
+void mostrarPuntaje(Carta m[],Jugador jug){
+
+    cout<<"====== JUGADOR "<<jug.id<<" ======"<<endl;
+    cout<<"[-] Puntos: "<<jug.puntos<<endl;
+    cout<<"[-] Cantidad de cartas: "<<jug.cantCartas<<endl;
+    cout<<"[-] Cantidad de Oros: "<<jug.cantOro<<endl;
+    cout<<"[-] Cantidad de 7: "<<jug.cantSiete<<endl;
+    cout<<"[-] Escobas: "<<jug.escobas<<endl;
+    if(jug.sieteOro){
+        cout<<"[-] Posee el siete de oro."<<endl;
+    }
+    cout<<"[-] Acumulado:"<<endl;
+    mostrarCartas(m,jug.acum);
+};
+
+void limpiarMesa(Carta m[],Jugador &jug){
+
+    for(int i=0;i<40;i++){
+        if(m[i].ubi == 'T'){
+
+            Carta C = m[i];
+            m[i].ubi = jug.acum;
+            
+            cout<<"[-] El "<<C.num<<" de "<<C.palo<<" se agrego a las cartas acumuladas del jugador "<<jug.id<<endl;
+            
+            jug.cantCartas++; // Acumula cantidad de cartas del jugador
+
+            if(strcmp(C.palo,"Oro") == 0){ // Acumula oros
+                jug.cantOro++;
+            }
+            if(C.num == 7){ // Acumula 7
+                jug.cantSiete++;
+            }
+            if(i == 12){ // Siete de oro
+                jug.sieteOro = true;
+            }
+        }
     }
 };
